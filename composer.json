@@ -1,0 +1,41 @@
+{
+    "name": "djurovicigoor/app-lifecycle",
+    "description": "App lifecycle state detection plugin for NativePHP Mobile detects foreground/background transitions on Android and iOS.",
+    "type": "nativephp-plugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Djurovic Igor",
+            "email": "djurovic.igoor@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "nativephp/mobile": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Djurovicigoor\\AppLifecycle\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Djurovicigoor\\AppLifecycle\\AppLifecycleServiceProvider"
+            ]
+        },
+        "nativephp": {
+            "manifest": "nativephp.json"
+        }
+    },
+    "require-dev": {
+    },
+    "scripts": {
+        "test": "pest"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
