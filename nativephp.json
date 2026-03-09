@@ -1,0 +1,69 @@
+{
+    "name": "djurovicigoor/app-lifecycle",
+    "version": "1.0.0",
+    "description": "App lifecycle state detection plugin for NativePHP Mobile detects foreground/background transitions on Android and iOS.",
+    "namespace": "AppLifecycle",
+    "keywords": [],
+    "category": "utilities",
+    "license": "MIT",
+    "pricing": {
+        "type": "free"
+    },
+    "author": {
+        "name": "Djurovic Igor",
+        "email": "djurovic.igoor@gmail.com",
+        "url": ""
+    },
+    "homepage": "",
+    "repository": "",
+    "funding": [],
+    "platforms": [
+        "android",
+        "ios"
+    ],
+    "icon": "resources/icon.png",
+    "screenshots": [],
+    "bridge_functions": [
+        {
+            "name": "AppLifecycle.Initialize",
+            "android": "com.djurovicigoor.plugins.app_lifecycle.AppLifecycleFunctions.Initialize",
+            "android_params": ["activity"],
+            "description": "Initialize app lifecycle monitoring (foreground/background detection)"
+        }
+    ],
+    "android": {
+        "min_version": 21,
+        "permissions": [],
+        "repositories": [],
+        "dependencies": {
+            "implementation": []
+        },
+        "activities": [],
+        "services": [],
+        "receivers": [],
+        "providers": []
+    },
+    "ios": {
+        "min_version": "15.0",
+        "init_function": "NativePHPAppLifecycleInit",
+        "permissions": [],
+        "repositories": [],
+        "dependencies": {
+            "swift_packages": [],
+            "pods": []
+        }
+    },
+    "assets": {
+        "android": [],
+        "ios": []
+    },
+    "secrets": [],
+    "events": [
+        "Djurovicigoor\\AppLifecycle\\Events\\AppForegrounded",
+        "Djurovicigoor\\AppLifecycle\\Events\\AppBackgrounded"
+    ],
+    "service_provider": "Djurovicigoor\\AppLifecycle\\AppLifecycleServiceProvider",
+    "hooks": {
+        "copy_assets": "nativephp:app-lifecycle:copy-assets"
+    }
+}
