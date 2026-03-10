@@ -59,6 +59,7 @@
     },
     "secrets": [],
     "events": [
+        "Djurovicigoor\\AppLifecycle\\Events\\AppBooted",
         "Djurovicigoor\\AppLifecycle\\Events\\AppForegrounded",
         "Djurovicigoor\\AppLifecycle\\Events\\AppBackgrounded"
     ],

@@ -1,6 +1,6 @@
 # AppLifecycle Plugin for NativePHP Mobile
 
-App lifecycle state detection for NativePHP Mobile — detects foreground/background transitions on Android and iOS.
+App lifecycle state detection for NativePHP Mobile — detects boot, foreground, and background transitions on Android and iOS.
 
 ![Android](https://img.shields.io/badge/Android-21%2B-3DDC84?logo=android&logoColor=white)
 ![iOS](https://img.shields.io/badge/iOS-15.0%2B-000000?logo=apple&logoColor=white)
@@ -41,12 +41,18 @@ Register a listener in your `AppServiceProvider`:
 ```php
 // app/Providers/AppServiceProvider.php
 
+use Djurovicigoor\AppLifecycle\Events\AppBooted;
 use Djurovicigoor\AppLifecycle\Events\AppForegrounded;
 use Djurovicigoor\AppLifecycle\Events\AppBackgrounded;
 use Illuminate\Support\Facades\Event;
 
 public function boot(): void
 {
+    // Fires once when the app cold-starts
+    Event::listen(AppBooted::class, function (AppBooted $event) {
+        // run one-time startup logic, log launch time, etc.
+    });
+
     // Fires every time the user returns to the app
     Event::listen(AppForegrounded::class, function (AppForegrounded $event) {
         // make an API call, refresh data, etc.
@@ -98,6 +104,13 @@ use Livewire\Component;
 
 class Dashboard extends Component
 {
+    #[On('native:Djurovicigoor\AppLifecycle\Events\AppBooted')]
+    public function handleBooted(int $timestamp): void
+    {
+        // Run once when the app first launches
+        $this->initializeSession();
+    }
+
     #[On('native:Djurovicigoor\AppLifecycle\Events\AppForegrounded')]
     public function handleForegrounded(int $timestamp): void
     {
@@ -119,14 +132,19 @@ class Dashboard extends Component
 ### JavaScript — Vue 3 (Composition API)
 
 ```javascript
-import { onAppForegrounded, onAppBackgrounded } from '@djurovicigoor/app-lifecycle';
+import { onAppBooted, onAppForegrounded, onAppBackgrounded } from '@djurovicigoor/app-lifecycle';
 import { onMounted, onUnmounted } from 'vue';
 
 export default {
     setup() {
-        let stopFg, stopBg;
+        let stopBoot, stopFg, stopBg;
 
         onMounted(() => {
+            stopBoot = onAppBooted(({ timestamp }) => {
+                console.log('App launched at', new Date(timestamp));
+                // one-time startup logic
+            });
+
             stopFg = onAppForegrounded(({ timestamp }) => {
                 console.log('App is active again', new Date(timestamp));
                 // fetch fresh data, restart polling, etc.
@@ -139,6 +157,7 @@ export default {
         });
 
         onUnmounted(() => {
+            stopBoot?.();
             stopFg?.();
             stopBg?.();
         });
@@ -151,11 +170,15 @@ export default {
 ### JavaScript — React
 
 ```javascript
-import { onAppForegrounded, onAppBackgrounded } from '@djurovicigoor/app-lifecycle';
+import { onAppBooted, onAppForegrounded, onAppBackgrounded } from '@djurovicigoor/app-lifecycle';
 import { useEffect } from 'react';
 
 export function Dashboard() {
     useEffect(() => {
+        const stopBoot = onAppBooted(({ timestamp }) => {
+            console.log('App launched at', timestamp);
+        });
+
         const stopFg = onAppForegrounded(({ timestamp }) => {
             console.log('App foregrounded at', timestamp);
         });
@@ -165,6 +188,7 @@ export function Dashboard() {
         });
 
         return () => {
+            stopBoot();
             stopFg();
             stopBg();
         };
@@ -177,13 +201,15 @@ export function Dashboard() {
 ### JavaScript — Vanilla / Inertia
 
 ```javascript
-import { onAppForegrounded, onAppBackgrounded } from '@djurovicigoor/app-lifecycle';
+import { onAppBooted, onAppForegrounded, onAppBackgrounded } from '@djurovicigoor/app-lifecycle';
 
 // Returns an unsubscribe function — call it to clean up
+const stopBoot = onAppBooted(({ timestamp }) => initApp());
 const stopFg = onAppForegrounded(({ timestamp }) => syncData());
 const stopBg = onAppBackgrounded(({ timestamp }) => saveState());
 
 // Later, when tearing down:
+stopBoot();
 stopFg();
 stopBg();
 ```
@@ -191,6 +217,20 @@ stopBg();
 ---
 
 ## Events
+
+### `AppBooted`
+
+Fired once when the app cold-starts (initial launch). Use this for one-time startup logic such as logging the launch time, initializing analytics sessions, or seeding in-memory caches.
+
+> **Note:** This event fires **only on cold start**, not on subsequent background → foreground transitions. Use `AppForegrounded` for those.
+
+**PHP class:** `Djurovicigoor\AppLifecycle\Events\AppBooted`
+
+| Property | Type | Description |
+|---|---|---|
+| `$timestamp` | `int` | Unix timestamp in milliseconds when the app launched |
+
+---
 
 ### `AppForegrounded`
 
@@ -221,13 +261,15 @@ Fired when the user leaves the app (presses Home, switches apps, or locks the sc
 ## JavaScript API
 
 ```javascript
-import { onAppForegrounded, onAppBackgrounded, Events } from '@djurovicigoor/app-lifecycle';
+import { onAppBooted, onAppForegrounded, onAppBackgrounded, Events } from '@djurovicigoor/app-lifecycle';
 ```
 
 | Function | Parameters | Returns | Description |
 |---|---|---|---|
+| `onAppBooted(handler)` | `handler: ({ timestamp: number }) => void` | `() => void` | Subscribe to the initial app launch (cold start) |
 | `onAppForegrounded(handler)` | `handler: ({ timestamp: number }) => void` | `() => void` | Subscribe to foreground transitions |
 | `onAppBackgrounded(handler)` | `handler: ({ timestamp: number }) => void` | `() => void` | Subscribe to background transitions |
+| `Events.AppLifecycle.AppBooted` | — | `string` | PHP class name constant |
 | `Events.AppLifecycle.AppForegrounded` | — | `string` | PHP class name constant |
 | `Events.AppLifecycle.AppBackgrounded` | — | `string` | PHP class name constant |
 
@@ -237,16 +279,18 @@ import { onAppForegrounded, onAppBackgrounded, Events } from '@djurovicigoor/app
 
 ### Android
 
+- Boot detection fires from the `Initialize` bridge function's `init {}` block, which runs once during activity startup
 - Foreground detection uses `NativePHPLifecycle.ON_RESUME`
 - Background detection uses `NativePHPLifecycle.ON_PAUSE`
-- The initial `onResume` at app launch is **suppressed** — a `wasBackgrounded` guard ensures only genuine returns fire the event
+- The initial `onResume` at app launch is **suppressed** — a `wasBackgrounded` guard ensures only genuine returns fire `AppForegrounded`
 - NativePHP's activity declares `android:configChanges="uiMode|colorMode|orientation|screenSize"`, so screen rotation does **not** trigger false foreground/background events
 
 ### iOS
 
+- Boot detection uses `UIApplication.didBecomeActiveNotification` with a one-shot `hasBooted` guard — this ensures the event fires only on cold start, after the bridge is fully ready
 - Foreground detection uses `UIApplication.willEnterForegroundNotification`
 - Background detection uses `UIApplication.didEnterBackgroundNotification`
-- `willEnterForeground` fires only when returning from the background, **not** on initial app launch — no extra guard is needed
+- `willEnterForeground` fires only when returning from the background, **not** on initial app launch — no extra guard is needed for `AppForegrounded`
 
 ---
 

@@ -20,6 +20,7 @@ import org.json.JSONObject
  * guard for rotation is needed.
  *
  * Events dispatched to PHP:
+ *   - Djurovicigoor\AppLifecycle\Events\AppBooted        (once, on initial app launch)
  *   - Djurovicigoor\AppLifecycle\Events\AppForegrounded  (onResume after a pause)
  *   - Djurovicigoor\AppLifecycle\Events\AppBackgrounded  (onPause)
  */
@@ -37,6 +38,19 @@ object AppLifecycleFunctions {
         private var wasBackgrounded = false
 
         init {
+            // ── App booted (initial launch) ──────────────────────────────────
+            val bootPayload = JSONObject().apply {
+                put("timestamp", System.currentTimeMillis())
+            }.toString()
+
+            Log.d("AppLifecycle", "App booted")
+
+            NativeActionCoordinator.dispatchEvent(
+                activity,
+                "Djurovicigoor\\AppLifecycle\\Events\\AppBooted",
+                bootPayload
+            )
+
             // ── Going to background ──────────────────────────────────────────
             NativePHPLifecycle.on(NativePHPLifecycle.Events.ON_PAUSE) { _ ->
                 wasBackgrounded = true

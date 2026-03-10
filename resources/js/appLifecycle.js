@@ -1,7 +1,7 @@
 /**
  * app-lifecycle — JavaScript client
  *
- * Listens for AppForegrounded / AppBackgrounded events dispatched by the
+ * Listens for AppBooted / AppForegrounded / AppBackgrounded events dispatched by the
  * native layer so Vue / React / vanilla JS can react without any extra
  * bridge calls.
  *
@@ -34,6 +34,7 @@
 
 export const Events = {
     AppLifecycle: {
+        AppBooted: 'Djurovicigoor\\AppLifecycle\\Events\\AppBooted',
         AppForegrounded: 'Djurovicigoor\\AppLifecycle\\Events\\AppForegrounded',
         AppBackgrounded: 'Djurovicigoor\\AppLifecycle\\Events\\AppBackgrounded',
     },
@@ -65,6 +66,17 @@ function subscribe(eventName, handler) {
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Register a callback that fires once when the app cold-starts (boots).
+ * Does NOT fire on background→foreground transitions — use onAppForegrounded for those.
+ *
+ * @param {(payload: { timestamp: number }) => void} handler
+ * @returns {() => void} unsubscribe function
+ */
+export function onAppBooted(handler) {
+    return subscribe(Events.AppLifecycle.AppBooted, handler);
+}
 
 /**
  * Register a callback that fires when the app returns to the foreground.
