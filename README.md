@@ -263,8 +263,8 @@ import { onAppForegrounded, onAppBackgrounded, Events } from '@djurovicigoor/app
 | NativePHP Mobile | `^3.0` |
 | PHP | `^8.2` |
 
-#Support
+# Support
 For questions or issues, email djurovic.igoor@gmail.com
 
-#License
+# License
 The MIT License (MIT). Please see License File for more information.
